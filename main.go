@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/okushchenko/prometheus-ecs-sd/cmd"
+    "github.com/connectedservices/prometheus-ecs-sd/cmd"
 	log "github.com/sirupsen/logrus"
 )
 
