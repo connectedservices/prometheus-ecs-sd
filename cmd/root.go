@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/okushchenko/prometheus-ecs-sd/discovery"
+	"github.com/connectedservices/prometheus-ecs-sd/discovery"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"

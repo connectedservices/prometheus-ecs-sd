@@ -15,7 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/defaults"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ecs"
-	awsService "github.com/okushchenko/prometheus-ecs-sd/aws"
+	awsService "github.com/connectedservices/prometheus-ecs-sd/aws"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/util/strutil"
 	"github.com/youtube/vitess/go/ioutil2"
@@ -192,14 +192,36 @@ func processContainer(
 	if *container.LastStatus != "RUNNING" || *taskDefinition.NetworkMode == "none" {
 		return targetGroup
 	}
+
 	for _, containerDefinition := range taskDefinition.ContainerDefinitions {
 		if *containerDefinition.Name == *container.Name {
 			if len(containerDefinition.PortMappings) == 0 {
 				return targetGroup
 			}
-			var port *int64
+			var port *int64 = nil
 			if *taskDefinition.NetworkMode == "bridge" {
-				port = container.NetworkBindings[0].HostPort
+                // Find the host port basing on ContainerPort, if passed
+                if rawContainerPort, customPort := containerDefinition.DockerLabels["io.prometheus.port"]; customPort {
+                    containerPort, err := strconv.ParseInt(*rawContainerPort, 10, 64)
+                    if err != nil {
+                        log.Errorf("Cant convert port %s to integer", rawContainerPort)
+                        // Skip this container
+                        return targetGroup
+                    } else {
+                        for _, networkBinding := range container.NetworkBindings {
+                            if *networkBinding.ContainerPort == containerPort {
+                                port = networkBinding.HostPort
+                                break
+                            }
+                        }
+                        if port == nil {
+                            log.Errorf("ContainerPort %s was not found. Skipping container ", containerPort)
+                            return targetGroup
+                        }
+                    }
+                } else {
+                    port = container.NetworkBindings[0].HostPort
+                }
 			} else if *taskDefinition.NetworkMode == "host" {
 				port = containerDefinition.PortMappings[0].HostPort
 			} else {
