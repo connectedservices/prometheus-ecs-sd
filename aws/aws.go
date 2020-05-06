@@ -179,7 +179,7 @@ func (aws *AWS) GetTasks(cluster *ecs.Cluster) (tasks []*ecs.Task, err error) {
 	}
 
 	var taskArnsChunks [][]*string
-	for i := 0; i <= len(taskArns); i += DescribeTasksChunkSize {
+	for i := 0; i < len(taskArns); i += DescribeTasksChunkSize {
 		end := i + DescribeTasksChunkSize
 		if end > len(taskArns) {
 			end = len(taskArns)
