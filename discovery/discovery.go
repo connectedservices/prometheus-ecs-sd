@@ -189,7 +189,7 @@ func processContainer(
 	taskDefinition *ecs.TaskDefinition) *TargetGroup {
 	targetGroup := &TargetGroup{}
 	// Skip containers with no exposed ports or not in a RUNNING status
-	if *container.LastStatus != "RUNNING" || *taskDefinition.NetworkMode == "none" {
+	if *container.LastStatus != "RUNNING" || taskDefinition.NetworkMode == nil || *taskDefinition.NetworkMode == "none" {
 		return targetGroup
 	}
 
