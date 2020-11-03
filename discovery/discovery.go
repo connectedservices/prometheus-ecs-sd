@@ -198,32 +198,39 @@ func processContainer(
 			if len(containerDefinition.PortMappings) == 0 {
 				return targetGroup
 			}
+
+			// Find out the scrape port
 			var port *int64 = nil
 			if *taskDefinition.NetworkMode == "bridge" {
-                // Find the host port basing on ContainerPort, if passed
-                if rawContainerPort, customPort := containerDefinition.DockerLabels["io.prometheus.port"]; customPort {
-                    containerPort, err := strconv.ParseInt(*rawContainerPort, 10, 64)
-                    if err != nil {
-                        log.Errorf("Cant convert port %s to integer", rawContainerPort)
-                        // Skip this container
-                        return targetGroup
-                    } else {
-                        for _, networkBinding := range container.NetworkBindings {
-                            if *networkBinding.ContainerPort == containerPort {
-                                port = networkBinding.HostPort
-                                break
-                            }
-                        }
-                        if port == nil {
-                            log.Errorf("ContainerPort %s was not found. Skipping container ", containerPort)
-                            return targetGroup
-                        }
-                    }
-                } else {
-                    port = container.NetworkBindings[0].HostPort
-                }
+				// Find the host port basing on "io.prometheus.port", if passed
+				if rawContainerPort, isPortCustom := containerDefinition.DockerLabels["io.prometheus.port"]; isPortCustom {
+					containerPort, err := strconv.ParseInt(*rawContainerPort, 10, 64)
+					if err != nil {
+						log.Errorf("Cant convert port %s to integer", rawContainerPort)
+						// Skip this container
+						return targetGroup
+					} else {
+						for _, networkBinding := range container.NetworkBindings {
+							if *networkBinding.ContainerPort == containerPort {
+								port = networkBinding.HostPort
+								break
+							}
+						}
+						if port == nil {
+							log.Errorf("ContainerPort %s was not found. Skipping container ", containerPort)
+							return targetGroup
+						}
+					}
+				} else {
+					// No "io.prometheus.port" label
+					port = container.NetworkBindings[0].HostPort
+				}
 			} else if *taskDefinition.NetworkMode == "host" {
-				port = containerDefinition.PortMappings[0].HostPort
+				if customPort, isPortCustom := containerDefinition.DockerLabels["io.prometheus.port"]; isPortCustom {
+					port = strconv.ParseInt(*customPort, 10, 64)
+				} else {
+					port = containerDefinition.PortMappings[0].HostPort
+				}
 			} else {
 				log.Warnf("Unrecognized NetworkMode %s, skipping", taskDefinition.NetworkMode)
 				return targetGroup
