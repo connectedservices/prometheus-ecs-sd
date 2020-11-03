@@ -233,7 +233,7 @@ func processContainer(
 						// Skip this container
 						return targetGroup
 					}
-                    port = hostPort
+                    port = &hostPort
 				} else {
 					port = containerDefinition.PortMappings[0].HostPort
 				}
