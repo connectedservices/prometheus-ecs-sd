@@ -227,12 +227,13 @@ func processContainer(
 				}
 			} else if *taskDefinition.NetworkMode == "host" {
 				if customPort, isPortCustom := containerDefinition.DockerLabels["io.prometheus.port"]; isPortCustom {
-					port, err := strconv.ParseInt(*customPort, 10, 64)
+					hostPort, err := strconv.ParseInt(*customPort, 10, 64)
 					if err != nil {
 						log.Errorf("Cant convert port %s to integer", customPort)
 						// Skip this container
 						return targetGroup
 					}
+                    port = hostPort
 				} else {
 					port = containerDefinition.PortMappings[0].HostPort
 				}
