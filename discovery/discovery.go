@@ -195,13 +195,13 @@ func processContainer(
 
 	for _, containerDefinition := range taskDefinition.ContainerDefinitions {
 		if *containerDefinition.Name == *container.Name {
-			if len(containerDefinition.PortMappings) == 0 {
-				return targetGroup
-			}
-
 			// Find out the scrape port
 			var port *int64 = nil
+
 			if *taskDefinition.NetworkMode == "bridge" {
+				if len(containerDefinition.PortMappings) == 0 {
+					return targetGroup
+				}
 				// Find the host port basing on "io.prometheus.port", if passed
 				if rawContainerPort, isPortCustom := containerDefinition.DockerLabels["io.prometheus.port"]; isPortCustom {
 					containerPort, err := strconv.ParseInt(*rawContainerPort, 10, 64)
@@ -235,7 +235,9 @@ func processContainer(
 					}
 					port = &hostPort
 				} else {
-					port = containerDefinition.PortMappings[0].HostPort
+					// io.prometheus.port needs to be defined as there are no port mappings in networkMode: host
+					log.Debug("No io.prometheus.port label, skipping")
+					return targetGroup
 				}
 			} else {
 				log.Warnf("Unrecognized NetworkMode %s, skipping", taskDefinition.NetworkMode)
