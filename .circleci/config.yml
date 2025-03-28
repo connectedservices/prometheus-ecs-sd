@@ -23,13 +23,14 @@ jobs:
       - run:
           name: Build Docker image
           command: |
-            eval $(aws ecr get-login --no-include-email)
+            ECR_REPOSITORY_FQDN=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+            aws ecr get-login-password | docker login --username AWS --password-stdin ${ECR_REPOSITORY_FQDN}
             if [ -n "${CIRCLE_TAG}" ];
               then DOCKER_TAG=${CIRCLE_TAG};
             else DOCKER_TAG=sha-${CIRCLE_SHA1::7};
             fi
-            docker build -t ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPOSITORY}:${DOCKER_TAG} .
-            docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPOSITORY}:${DOCKER_TAG}
+            docker build -t ${ECR_REPOSITORY_FQDN}/${ECR_REPOSITORY}:${DOCKER_TAG} .
+            docker push ${ECR_REPOSITORY_FQDN}/${ECR_REPOSITORY}:${DOCKER_TAG}
 workflows:
   version: 2
   main:
